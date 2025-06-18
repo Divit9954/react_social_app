@@ -1,13 +1,16 @@
 import { createContext , useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import api from '../api/posts';
-import EditPost from '../EditPost';
+// import EditPost from '../EditPost';
 import useWindowSize from '../hooks/useWindowSize';
 import useAxiosFetch from '../hooks/useAxiosFetch';
 import { useNavigate } from 'react-router-dom';
 const DataContext = createContext({});
 export const DataProvider = ({ children }) =>{
-    const [posts, setPosts] = useState([]);
+    const [posts, setPosts] = useState(() => {
+      const localData = localStorage.getItem('posts');
+      return localData ? JSON.parse(localData) : [];
+    });
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [postTitle, setPostTitle] = useState('');
@@ -16,12 +19,18 @@ export const DataProvider = ({ children }) =>{
   const [editBody, setEditBody] = useState('');
   const navigate = useNavigate();
   const { width } = useWindowSize();
-  const { data, fetchError, isLoading } = useAxiosFetch('http://localhost:3500/posts');
+const { data, fetchError, isLoading } = useAxiosFetch('/posts');
 
   useEffect(() => {
-    setPosts(data);
+    if (data.length) {
+      setPosts(data);
+    }
   }
   , [data]);
+
+  useEffect(() => {
+    localStorage.setItem('posts', JSON.stringify(posts));
+  }, [posts]);
   
   useEffect(() => {
     const filteredResults = posts.filter((post) =>
@@ -36,7 +45,7 @@ const handleSubmit = async (e) => {
     const datetime = format(new Date(), 'MMMM dd, yyyy pp'); 
     const newPost = { id, title: postTitle, datetime, body: postBody };
       try {
-        const response= await api.post('/', newPost);
+        const response= await api.post('/posts', newPost);
         const allPosts = [...posts, response.data];
         setPosts(allPosts);
         setPostTitle('');
@@ -56,7 +65,7 @@ const handleEdit = async (e, id) => {
     const updatedPost = { id, title: editTitle, datetime, body: editBody };
     console.log("Updated post data:", updatedPost);
     try {
-      const response = await api.put(`/${id}`, updatedPost);
+      const response = await api.put(`/posts/${id}`, updatedPost);
       console.log("API response:", response);
       const postsList = posts.map((post) => (post.id === id ? { ...response.data } : post));
       setPosts(postsList);
@@ -70,7 +79,7 @@ const handleEdit = async (e, id) => {
 
   const handleDelete = async(e) => {
     try {
-    await api.delete(`/${e}`);
+    await api.delete(`/posts/${e}`);
     const id = e;
     const postsList = posts.filter((post) => post.id !== id);
     setPosts(postsList);

@@ -1,5 +1,5 @@
 import { useState , useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/posts';
 const useAxiosFetch = (dataUrl) => {
   const [data, setData] = useState([]);
   const [fetchError, setFetchError] = useState(null);
@@ -7,12 +7,12 @@ const useAxiosFetch = (dataUrl) => {
 
   useEffect(() => {
     let isMounted = true;
-    const source = axios.CancelToken.source();
+    const controller = new AbortController();
     const fetchData = async (dataUrl) => {
       setIsLoading(true);
       try {
         const response = await axios.get(dataUrl, {
-          cancelToken: source.token,
+          signal: controller.signal,
         });
         if (isMounted) {
           setData(response.data);
@@ -20,8 +20,12 @@ const useAxiosFetch = (dataUrl) => {
         }
       } catch (err) {
         if (isMounted) {
-          setFetchError(err.message);
-          setData([]);
+          if (err.name === 'CanceledError') {
+            console.log('Request canceled', err.message);
+          } else {
+            setFetchError(err.message);
+            setData([]);
+          }
         }
       } finally {
         if (isMounted) {
@@ -32,7 +36,7 @@ const useAxiosFetch = (dataUrl) => {
     fetchData(dataUrl);
     return () => {
       isMounted = false;
-      source.cancel();
+      controller.abort();
     };
   }
   , [dataUrl]);

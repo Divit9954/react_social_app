@@ -8,6 +8,7 @@ import Missing from './Missing';
 import Nav from './Nav';
 import NewPost from './NewPost';
 import PostPage from './PostPage';
+import EditPost from './EditPost';
 import { DataProvider } from './context/DataContex';
 
 function App() {
@@ -27,7 +28,7 @@ function App() {
               
             <Route path=":id" element={<PostPage />} />
           </Route>
-          <Route path="edit/:id" element={<NewPost />} />
+          <Route path="edit/:id" element={<EditPost />} />
           <Route path="about" element={<About />} />
           <Route path="*" element={<Missing />} />
         </Routes>
